@@ -209,7 +209,7 @@ variable "ssm_parameter_path" {
 
 variable "db_password_secret_arn" {
   type        = string
-  description = "Optional Secrets Manager secret ARN for DB password."
+  description = "Secrets Manager secret ARN for DB password. Required when use_json_storage is false and use_ssm_parameters is false."
   default     = ""
   sensitive   = true
 }

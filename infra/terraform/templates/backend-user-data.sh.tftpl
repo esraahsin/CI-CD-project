@@ -58,6 +58,11 @@ if [ "${use_json_storage}" = "false" ]; then
     DB_NAME="${db_name}"
   fi
 
+  if [ "${use_ssm_parameters}" != "true" ] && [ -z "${db_password_secret_arn}" ]; then
+    echo "DB_PASSWORD must be provided via SSM or Secrets Manager." >&2
+    exit 1
+  fi
+
   if [ -n "${db_password_secret_arn}" ]; then
     DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "${db_password_secret_arn}" --query "SecretString" --output text)
   fi
@@ -68,10 +73,10 @@ if [ "${use_json_storage}" = "false" ]; then
   fi
 
   cat >> "$ENV_FILE" <<ENVFILE
-DB_HOST=$${DB_HOST}
-DB_USER=$${DB_USER}
-DB_PASSWORD=$${DB_PASSWORD}
-DB_NAME=$${DB_NAME}
+DB_HOST=$DB_HOST
+DB_USER=$DB_USER
+DB_PASSWORD=$DB_PASSWORD
+DB_NAME=$DB_NAME
 ENVFILE
 fi
 
