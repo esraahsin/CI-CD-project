@@ -1,0 +1,50 @@
+#!/bin/bash -e
+
+export AWS_REGION="${aws_region}"
+
+yum update -y
+yum install -y git nginx
+curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+yum install -y nodejs
+
+systemctl enable nginx
+
+APP_DIR="/home/ec2-user/app"
+mkdir -p "$APP_DIR"
+chown ec2-user:ec2-user "$APP_DIR"
+
+if [ ! -d "$APP_DIR/.git" ]; then
+  sudo -u ec2-user git clone --branch "${repo_branch}" "${repo_url}" "$APP_DIR"
+else
+  cd "$APP_DIR"
+  sudo -u ec2-user git fetch --all
+  sudo -u ec2-user git reset --hard "origin/${repo_branch}"
+fi
+
+cd "$APP_DIR/${frontend_path}"
+
+sudo -u ec2-user npm install
+sudo -u ec2-user npm run build
+
+rm -rf /usr/share/nginx/html/*
+BUILD_OUTPUT="$APP_DIR/${frontend_path}/${frontend_build_output_path}"
+cp -r "$BUILD_OUTPUT"/* /usr/share/nginx/html/
+
+cat > /usr/share/nginx/html/runtime-config.js <<RUNTIME
+window.__API_URL__ = ${backend_api_url_json};
+RUNTIME
+
+cat > /etc/nginx/conf.d/frontend.conf <<'NGINX'
+server {
+  listen 80;
+  server_name _;
+  root /usr/share/nginx/html;
+  index index.html;
+
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+}
+NGINX
+
+systemctl restart nginx
