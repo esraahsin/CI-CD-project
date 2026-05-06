@@ -168,7 +168,25 @@ variable "db_port" {
 variable "db_backup_retention_period" {
   type        = number
   description = "Number of days to retain RDS backups."
-  default     = 0
+  default     = 7
+}
+
+variable "db_skip_final_snapshot" {
+  type        = bool
+  description = "Whether to skip the final snapshot on RDS deletion."
+  default     = false
+}
+
+variable "db_deletion_protection" {
+  type        = bool
+  description = "Whether deletion protection is enabled for the RDS instance."
+  default     = true
+}
+
+variable "db_final_snapshot_identifier" {
+  type        = string
+  description = "Final snapshot identifier used when skip_final_snapshot is false."
+  default     = ""
 }
 
 variable "db_publicly_accessible" {

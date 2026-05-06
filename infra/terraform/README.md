@@ -37,6 +37,9 @@ Optional values for RDS (when `use_json_storage = false`):
 ```hcl
 db_password = "change-me"
 db_backup_retention_period = 7
+db_skip_final_snapshot = false
+db_deletion_protection = true
+db_final_snapshot_identifier = "ci-cd-project-final"
 ```
 
 Optional values for frontend build output:
@@ -52,6 +55,8 @@ use_ssm_parameters   = true
 ssm_parameter_path   = "/ci-cd-project/backend"
 db_password_secret_arn = "arn:aws:secretsmanager:REGION:ACCOUNT:secret:NAME"
 ```
+
+When using database storage, the backend expects DB credentials from SSM or Secrets Manager (to avoid plaintext in user data). Provide either `use_ssm_parameters = true` with the required parameters or `db_password_secret_arn`.
 
 When `use_ssm_parameters = true`, the instances read these parameters:
 
