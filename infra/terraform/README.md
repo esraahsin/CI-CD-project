@@ -29,12 +29,19 @@ Create a `terraform.tfvars` with the required values:
 ```hcl
 key_pair_name = "your-key-pair"
 use_json_storage = true
+ssh_cidr = "YOUR_IP/32"
 ```
 
 Optional values for RDS (when `use_json_storage = false`):
 
 ```hcl
 db_password = "change-me"
+```
+
+Optional values for frontend build output:
+
+```hcl
+frontend_build_output_path = "dist/client"
 ```
 
 Optional values for SSM/Secrets Manager:

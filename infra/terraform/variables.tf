@@ -43,7 +43,7 @@ variable "availability_zones" {
 variable "ssh_cidr" {
   type        = string
   description = "CIDR allowed to SSH to instances."
-  default     = "0.0.0.0/0"
+  default     = "127.0.0.1/32"
 }
 
 variable "http_cidr" {
@@ -146,6 +146,11 @@ variable "db_password" {
   description = "Database password (used when provisioning RDS)."
   default     = ""
   sensitive   = true
+
+  validation {
+    condition     = var.use_json_storage || var.db_password_secret_arn != "" || length(var.db_password) > 0
+    error_message = "db_password must be set when use_json_storage is false and no Secrets Manager ARN is provided."
+  }
 }
 
 variable "db_host" {
@@ -189,4 +194,10 @@ variable "frontend_api_url" {
   type        = string
   description = "Optional override for the frontend API base URL."
   default     = ""
+}
+
+variable "frontend_build_output_path" {
+  type        = string
+  description = "Build output path for the frontend app."
+  default     = "dist/client"
 }

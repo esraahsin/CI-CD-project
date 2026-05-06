@@ -328,7 +328,8 @@ resource "aws_instance" "frontend" {
     repo_url       = var.app_repo_url
     repo_branch    = var.app_repo_branch
     frontend_path  = var.frontend_app_path
-    backend_api_url = local.backend_api_url
+    backend_api_url          = local.backend_api_url
+    frontend_build_output_path = var.frontend_build_output_path
   })
   user_data_replace_on_change = true
   tags                        = merge(local.tags, { Name = "${local.name_prefix}-frontend" })

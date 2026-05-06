@@ -34,7 +34,7 @@ function initializeDatabase() {
 
   if (!dbHost || !dbUser || !dbPassword || !dbName) {
     throw new Error(
-      'Missing DB configuration. Provide DB_HOST, DB_USER, DB_PASSWORD, and DB_NAME or set USE_JSON_STORAGE=true.'
+      'Missing DB configuration. DB_HOST, DB_USER, DB_PASSWORD, and DB_NAME are required when using database storage.'
     );
   }
 

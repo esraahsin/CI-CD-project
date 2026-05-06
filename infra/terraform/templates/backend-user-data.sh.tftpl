@@ -74,6 +74,6 @@ fi
 chown ec2-user:ec2-user "$ENV_FILE"
 
 sudo -u ec2-user npm install
-sudo -u ec2-user pm2 start index.js --name backend
+sudo -u ec2-user pm2 start "$APP_DIR/${backend_path}/index.js" --name backend
 sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ec2-user --hp /home/ec2-user
 sudo -u ec2-user pm2 save

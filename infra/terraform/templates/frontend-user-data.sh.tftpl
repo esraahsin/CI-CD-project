@@ -27,7 +27,7 @@ sudo -u ec2-user npm install
 sudo -u ec2-user npm run build
 
 rm -rf /usr/share/nginx/html/*
-cp -r dist/client/* /usr/share/nginx/html/
+cp -r "${frontend_build_output_path}"/* /usr/share/nginx/html/
 
 cat > /usr/share/nginx/html/runtime-config.js <<RUNTIME
 window.__API_URL__ = "${backend_api_url}";
