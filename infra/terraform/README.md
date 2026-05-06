@@ -45,7 +45,7 @@ db_auto_minor_version_upgrade = false
 Optional values for frontend build output:
 
 ```hcl
-frontend_build_output_path = "dist/client"
+frontend_build_output_path = "dist/client/browser"
 ```
 
 Optional values for SSM/Secrets Manager:
