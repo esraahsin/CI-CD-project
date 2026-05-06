@@ -48,18 +48,17 @@ ENVFILE
 
 if [ "${use_json_storage}" = "false" ]; then
   if [ "${use_ssm_parameters}" = "true" ]; then
-    DB_HOST=$(aws ssm get-parameter --name "${ssm_parameter_path}/DB_HOST" --with-decryption --query "Parameter.Value" --output text)
-    DB_USER=$(aws ssm get-parameter --name "${ssm_parameter_path}/DB_USER" --with-decryption --query "Parameter.Value" --output text)
-    DB_PASSWORD=$(aws ssm get-parameter --name "${ssm_parameter_path}/DB_PASSWORD" --with-decryption --query "Parameter.Value" --output text)
-    DB_NAME=$(aws ssm get-parameter --name "${ssm_parameter_path}/DB_NAME" --with-decryption --query "Parameter.Value" --output text)
+    DB_HOST=$(aws ssm get-parameter --name "${ssm_parameter_path}/DB_HOST" --with-decryption --query "Parameter.Value" --output text) || { echo "Failed to retrieve DB_HOST from SSM." >&2; exit 1; }
+    DB_USER=$(aws ssm get-parameter --name "${ssm_parameter_path}/DB_USER" --with-decryption --query "Parameter.Value" --output text) || { echo "Failed to retrieve DB_USER from SSM." >&2; exit 1; }
+    DB_PASSWORD=$(aws ssm get-parameter --name "${ssm_parameter_path}/DB_PASSWORD" --with-decryption --query "Parameter.Value" --output text) || { echo "Failed to retrieve DB_PASSWORD from SSM." >&2; exit 1; }
+    DB_NAME=$(aws ssm get-parameter --name "${ssm_parameter_path}/DB_NAME" --with-decryption --query "Parameter.Value" --output text) || { echo "Failed to retrieve DB_NAME from SSM." >&2; exit 1; }
   else
     DB_HOST="${db_host}"
     DB_USER="${db_user}"
     DB_NAME="${db_name}"
-  fi
-
-  if [ -n "${db_password_secret_arn}" ]; then
-    DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "${db_password_secret_arn}" --query "SecretString" --output text)
+    if [ -n "${db_password_secret_arn}" ]; then
+      DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "${db_password_secret_arn}" --query "SecretString" --output text) || { echo "Failed to retrieve DB password from Secrets Manager." >&2; exit 1; }
+    fi
   fi
 
   if [ -z "$DB_PASSWORD" ]; then

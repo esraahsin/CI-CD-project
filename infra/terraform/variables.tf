@@ -103,6 +103,11 @@ variable "use_json_storage" {
   type        = bool
   description = "When true, the backend uses JSON storage and skips provisioning RDS."
   default     = true
+
+  validation {
+    condition     = var.use_json_storage || var.use_ssm_parameters || var.db_password_secret_arn != ""
+    error_message = "When use_json_storage is false, set use_ssm_parameters or db_password_secret_arn to supply DB_PASSWORD."
+  }
 }
 
 variable "db_engine" {
@@ -193,11 +198,6 @@ variable "use_ssm_parameters" {
   type        = bool
   description = "When true, read backend environment values from SSM parameters."
   default     = false
-
-  validation {
-    condition     = var.use_json_storage || var.use_ssm_parameters || var.db_password_secret_arn != ""
-    error_message = "Set use_ssm_parameters or db_password_secret_arn when use_json_storage is false."
-  }
 }
 
 variable "ssm_parameter_path" {
