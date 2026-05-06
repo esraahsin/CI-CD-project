@@ -6,7 +6,7 @@ locals {
   private_subnet_map = { for idx, cidr in var.private_subnet_cidrs : idx => cidr }
   enable_rds         = !var.use_json_storage
   db_host_value      = local.enable_rds ? aws_db_instance.main[0].address : var.db_host
-  db_password_value  = var.db_password_secret_arn != "" ? data.aws_secretsmanager_secret_version.db_password[0].secret_string : var.db_password
+  db_password_value  = var.db_password_secret_arn != "" ? data.aws_secretsmanager_secret_version.db_password[0].secret_string : (var.use_ssm_parameters ? data.aws_ssm_parameter.db_password[0].value : "")
   final_snapshot_identifier = var.db_final_snapshot_identifier != "" ? var.db_final_snapshot_identifier : "${local.name_prefix}-final"
   backend_api_url    = var.frontend_api_url != "" ? var.frontend_api_url : "http://${aws_instance.backend.public_dns}"
   ssm_parameter_arn  = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.ssm_parameter_path}*"
@@ -29,6 +29,12 @@ data "aws_ami" "amazon_linux" {
 data "aws_secretsmanager_secret_version" "db_password" {
   count     = var.db_password_secret_arn != "" ? 1 : 0
   secret_id = var.db_password_secret_arn
+}
+
+data "aws_ssm_parameter" "db_password" {
+  count           = var.use_ssm_parameters ? 1 : 0
+  name            = "${var.ssm_parameter_path}/DB_PASSWORD"
+  with_decryption = true
 }
 
 resource "aws_vpc" "main" {
@@ -232,7 +238,7 @@ resource "aws_db_instance" "main" {
   publicly_accessible       = var.db_publicly_accessible
   backup_retention_period   = var.db_backup_retention_period
   apply_immediately         = true
-  auto_minor_version_upgrade = true
+  auto_minor_version_upgrade = var.db_auto_minor_version_upgrade
   tags                      = merge(local.tags, { Name = "${local.name_prefix}-db" })
 }
 
@@ -320,12 +326,6 @@ resource "aws_instance" "backend" {
     db_password_secret_arn = var.db_password_secret_arn
   })
   user_data_replace_on_change = true
-  lifecycle {
-    precondition {
-      condition     = var.use_json_storage || var.use_ssm_parameters || var.db_password_secret_arn != ""
-      error_message = "Set use_ssm_parameters or db_password_secret_arn when use_json_storage is false to avoid plaintext DB passwords."
-    }
-  }
   tags                        = merge(local.tags, { Name = "${local.name_prefix}-backend" })
 }
 
@@ -341,7 +341,7 @@ resource "aws_instance" "frontend" {
     repo_url       = var.app_repo_url
     repo_branch    = var.app_repo_branch
     frontend_path  = var.frontend_app_path
-    backend_api_url          = local.backend_api_url
+    backend_api_url_json       = jsonencode(local.backend_api_url)
     frontend_build_output_path = var.frontend_build_output_path
   })
   user_data_replace_on_change = true

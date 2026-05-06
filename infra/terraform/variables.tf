@@ -141,18 +141,6 @@ variable "db_username" {
   default     = "appuser"
 }
 
-variable "db_password" {
-  type        = string
-  description = "Database password (used when provisioning RDS)."
-  default     = ""
-  sensitive   = true
-
-  validation {
-    condition     = var.use_json_storage || var.db_password_secret_arn != "" || length(var.db_password) > 0
-    error_message = "db_password is required when use_json_storage is false, unless db_password_secret_arn is provided."
-  }
-}
-
 variable "db_host" {
   type        = string
   description = "Database host when using an external database."
@@ -189,6 +177,12 @@ variable "db_final_snapshot_identifier" {
   default     = ""
 }
 
+variable "db_auto_minor_version_upgrade" {
+  type        = bool
+  description = "Whether to enable automatic minor version upgrades for RDS."
+  default     = false
+}
+
 variable "db_publicly_accessible" {
   type        = bool
   description = "Whether the RDS instance is publicly accessible."
@@ -199,6 +193,11 @@ variable "use_ssm_parameters" {
   type        = bool
   description = "When true, read backend environment values from SSM parameters."
   default     = false
+
+  validation {
+    condition     = var.use_json_storage || var.use_ssm_parameters || var.db_password_secret_arn != ""
+    error_message = "Set use_ssm_parameters or db_password_secret_arn when use_json_storage is false."
+  }
 }
 
 variable "ssm_parameter_path" {

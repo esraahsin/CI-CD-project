@@ -31,7 +31,7 @@ BUILD_OUTPUT="$APP_DIR/${frontend_path}/${frontend_build_output_path}"
 cp -r "$BUILD_OUTPUT"/* /usr/share/nginx/html/
 
 cat > /usr/share/nginx/html/runtime-config.js <<RUNTIME
-window.__API_URL__ = "${backend_api_url}";
+window.__API_URL__ = ${backend_api_url_json};
 RUNTIME
 
 cat > /etc/nginx/conf.d/frontend.conf <<'NGINX'

@@ -35,11 +35,11 @@ ssh_cidr = "YOUR_IP/32"
 Optional values for RDS (when `use_json_storage = false`):
 
 ```hcl
-db_password = "change-me"
 db_backup_retention_period = 7
 db_skip_final_snapshot = false
 db_deletion_protection = true
 db_final_snapshot_identifier = "ci-cd-project-final"
+db_auto_minor_version_upgrade = false
 ```
 
 Optional values for frontend build output:
@@ -57,6 +57,8 @@ db_password_secret_arn = "arn:aws:secretsmanager:REGION:ACCOUNT:secret:NAME"
 ```
 
 When using database storage, the backend expects DB credentials from SSM or Secrets Manager (to avoid plaintext in user data). Provide either `use_ssm_parameters = true` with the required parameters or `db_password_secret_arn`.
+
+The DB password used for RDS provisioning is pulled from the same SSM parameter (`DB_PASSWORD`) or Secrets Manager secret.
 
 When `use_ssm_parameters = true`, the instances read these parameters:
 
