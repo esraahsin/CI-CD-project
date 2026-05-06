@@ -27,11 +27,22 @@ let dbReady = Promise.resolve();
 
 function initializeDatabase() {
   const mysql = require('mysql2');
+  const dbHost = process.env.DB_HOST;
+  const dbUser = process.env.DB_USER;
+  const dbPassword = process.env.DB_PASSWORD;
+  const dbName = process.env.DB_NAME;
+
+  if (!dbHost || !dbUser || !dbPassword || !dbName) {
+    throw new Error(
+      'Missing DB configuration. Provide DB_HOST, DB_USER, DB_PASSWORD, and DB_NAME or set USE_JSON_STORAGE=true.'
+    );
+  }
+
   db = mysql.createConnection({
-    host: process.env.DB_HOST || 'database1.colpdmacwjni.us-east-1.rds.amazonaws.com',
-    user: process.env.DB_USER || 'admin',
-    password: process.env.DB_PASSWORD || 'admin123',
-    database: process.env.DB_NAME || 'database3'
+    host: dbHost,
+    user: dbUser,
+    password: dbPassword,
+    database: dbName
   });
 
   const createTableQuery = `
