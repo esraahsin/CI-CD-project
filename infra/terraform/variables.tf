@@ -149,7 +149,7 @@ variable "db_password" {
 
   validation {
     condition     = var.use_json_storage || var.db_password_secret_arn != "" || length(var.db_password) > 0
-    error_message = "db_password must be set when use_json_storage is false and no Secrets Manager ARN is provided."
+    error_message = "db_password is required when use_json_storage is false, unless db_password_secret_arn is provided."
   }
 }
 
@@ -163,6 +163,12 @@ variable "db_port" {
   type        = number
   description = "Database port."
   default     = 3306
+}
+
+variable "db_backup_retention_period" {
+  type        = number
+  description = "Number of days to retain RDS backups."
+  default     = 0
 }
 
 variable "db_publicly_accessible" {

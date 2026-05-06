@@ -36,6 +36,7 @@ Optional values for RDS (when `use_json_storage = false`):
 
 ```hcl
 db_password = "change-me"
+db_backup_retention_period = 7
 ```
 
 Optional values for frontend build output:

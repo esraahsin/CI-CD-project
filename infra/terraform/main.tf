@@ -6,7 +6,7 @@ locals {
   private_subnet_map = { for idx, cidr in var.private_subnet_cidrs : idx => cidr }
   enable_rds         = !var.use_json_storage
   db_host_value      = local.enable_rds ? aws_db_instance.main[0].address : var.db_host
-  backend_api_url    = var.frontend_api_url != "" ? var.frontend_api_url : "http://${aws_instance.backend.public_ip}"
+  backend_api_url    = var.frontend_api_url != "" ? var.frontend_api_url : "http://${aws_instance.backend.public_dns}"
   ssm_parameter_arn  = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.ssm_parameter_path}*"
   tags = {
     Project     = var.project_name
@@ -222,7 +222,7 @@ resource "aws_db_instance" "main" {
   skip_final_snapshot       = true
   deletion_protection       = false
   publicly_accessible       = var.db_publicly_accessible
-  backup_retention_period   = 0
+  backup_retention_period   = var.db_backup_retention_period
   apply_immediately         = true
   auto_minor_version_upgrade = true
   tags                      = merge(local.tags, { Name = "${local.name_prefix}-db" })
