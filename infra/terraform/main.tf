@@ -247,6 +247,14 @@ resource "aws_db_instance" "main" {
 data "aws_iam_instance_profile" "lab" {
   name = "LabInstanceProfile"
 }
+resource "aws_ssm_parameter" "db_host" {
+  count     = local.enable_rds ? 1 : 0
+  name      = "${var.ssm_parameter_path}/DB_HOST"
+  type      = "SecureString"
+  value     = aws_db_instance.main[0].address
+  overwrite = true
+  tags      = local.tags
+}
 resource "aws_instance" "backend" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.backend_instance_type
@@ -254,6 +262,7 @@ resource "aws_instance" "backend" {
   vpc_security_group_ids      = [aws_security_group.backend.id]
   key_name                    = var.key_pair_name
   iam_instance_profile = data.aws_iam_instance_profile.lab.name
+  depends_on = [aws_ssm_parameter.db_host]
   user_data                   = templatefile("${path.module}/templates/backend-user-data.sh.tftpl", {
     aws_region           = var.aws_region
     repo_url             = var.app_repo_url
