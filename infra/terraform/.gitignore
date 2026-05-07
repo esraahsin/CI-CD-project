@@ -6,3 +6,4 @@ terraform.tfstate.backup
 *.tfstate.*
 crash.log
 crash.*.log
+infra\terraform\my-sandbox-key.pem
