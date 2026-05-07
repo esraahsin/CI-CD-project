@@ -22,7 +22,7 @@ data "aws_ami" "amazon_linux" {
 
   filter {
     name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+    values = ["al2023-ami-*-x86_64"]
   }
 }
 
@@ -242,77 +242,18 @@ resource "aws_db_instance" "main" {
   tags                      = merge(local.tags, { Name = "${local.name_prefix}-db" })
 }
 
-resource "aws_iam_role" "ec2" {
-  name = "${local.name_prefix}-ec2-role"
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-  tags = local.tags
+
+data "aws_iam_instance_profile" "lab" {
+  name = "LabInstanceProfile"
 }
-
-resource "aws_iam_role_policy_attachment" "ssm_core" {
-  role       = aws_iam_role.ec2.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-data "aws_iam_policy_document" "ec2_access" {
-  dynamic "statement" {
-    for_each = var.use_ssm_parameters ? [1] : []
-    content {
-      actions = [
-        "ssm:GetParameter",
-        "ssm:GetParameters",
-        "ssm:GetParametersByPath"
-      ]
-      resources = [local.ssm_parameter_arn]
-    }
-  }
-
-  dynamic "statement" {
-    for_each = var.db_password_secret_arn != "" ? [1] : []
-    content {
-      actions   = ["secretsmanager:GetSecretValue"]
-      resources = [var.db_password_secret_arn]
-    }
-  }
-}
-
-resource "aws_iam_policy" "ec2_access" {
-  count  = (var.use_ssm_parameters || var.db_password_secret_arn != "") ? 1 : 0
-  name   = "${local.name_prefix}-ec2-access"
-  policy = data.aws_iam_policy_document.ec2_access.json
-  tags   = local.tags
-}
-
-resource "aws_iam_role_policy_attachment" "ec2_access" {
-  count      = (var.use_ssm_parameters || var.db_password_secret_arn != "") ? 1 : 0
-  role       = aws_iam_role.ec2.name
-  policy_arn = aws_iam_policy.ec2_access[0].arn
-}
-
-resource "aws_iam_instance_profile" "ec2" {
-  name = "${local.name_prefix}-ec2-profile"
-  role = aws_iam_role.ec2.name
-  tags = local.tags
-}
-
 resource "aws_instance" "backend" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.backend_instance_type
   subnet_id                   = values(aws_subnet.public)[0].id
   vpc_security_group_ids      = [aws_security_group.backend.id]
   key_name                    = var.key_pair_name
-  iam_instance_profile        = aws_iam_instance_profile.ec2.name
+  iam_instance_profile = data.aws_iam_instance_profile.lab.name
   user_data                   = templatefile("${path.module}/templates/backend-user-data.sh.tftpl", {
     aws_region           = var.aws_region
     repo_url             = var.app_repo_url
@@ -330,19 +271,24 @@ resource "aws_instance" "backend" {
   user_data_replace_on_change = true
   tags                        = merge(local.tags, { Name = "${local.name_prefix}-backend" })
 }
-
 resource "aws_instance" "frontend" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.frontend_instance_type
   subnet_id                   = values(aws_subnet.public)[0].id
   vpc_security_group_ids      = [aws_security_group.frontend.id]
   key_name                    = var.key_pair_name
-  iam_instance_profile        = aws_iam_instance_profile.ec2.name
+  iam_instance_profile        = data.aws_iam_instance_profile.lab.name
+
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp3"
+  }
+
   user_data                   = templatefile("${path.module}/templates/frontend-user-data.sh.tftpl", {
-    aws_region     = var.aws_region
-    repo_url       = var.app_repo_url
-    repo_branch    = var.app_repo_branch
-    frontend_path  = var.frontend_app_path
+    aws_region                 = var.aws_region
+    repo_url                   = var.app_repo_url
+    repo_branch                = var.app_repo_branch
+    frontend_path              = var.frontend_app_path
     backend_api_url_json       = jsonencode(local.backend_api_url)
     frontend_build_output_path = var.frontend_build_output_path
   })

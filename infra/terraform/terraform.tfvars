@@ -1,6 +1,6 @@
 # Required
-key_pair_name = "your-key-pair-name"   # must exist in AWS already
-ssh_cidr      = "YOUR_PUBLIC_IP/32"    # get it from https://checkip.amazonaws.com
+key_pair_name = "my-sandbox-key"   # must exist in AWS already
+ssh_cidr      = "102.172.207.55/32"    # get it from https://checkip.amazonaws.com
 
 # Storage
 use_json_storage = true                # false = uses RDS MySQL

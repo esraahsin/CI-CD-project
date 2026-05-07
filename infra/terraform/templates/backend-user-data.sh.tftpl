@@ -2,13 +2,14 @@
 
 export AWS_REGION="${aws_region}"
 
-yum update -y
-yum install -y git nginx awscli
+dnf update -y
+dnf install -y git nginx
 curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
-yum install -y nodejs
+dnf install -y nodejs
 npm install -g pm2
 
 systemctl enable nginx
+
 cat > /etc/nginx/conf.d/backend.conf <<'NGINX'
 server {
   listen 80;
@@ -24,6 +25,7 @@ server {
   }
 }
 NGINX
+
 rm -f /etc/nginx/conf.d/default.conf
 systemctl restart nginx
 
@@ -42,6 +44,7 @@ fi
 cd "$APP_DIR/${backend_path}"
 
 ENV_FILE="$APP_DIR/${backend_path}/.env"
+
 cat > "$ENV_FILE" <<ENVFILE
 PORT=${backend_port}
 USE_JSON_STORAGE=${use_json_storage}
@@ -50,13 +53,17 @@ ENVFILE
 if [ "${use_json_storage}" = "false" ]; then
   if [ "${use_ssm_parameters}" = "true" ]; then
     DB_HOST=$(aws ssm get-parameter --name "${ssm_parameter_path}/DB_HOST" --with-decryption --query "Parameter.Value" --output text) || { echo "Failed to retrieve DB_HOST from SSM." >&2; exit 1; }
+
     DB_USER=$(aws ssm get-parameter --name "${ssm_parameter_path}/DB_USER" --with-decryption --query "Parameter.Value" --output text) || { echo "Failed to retrieve DB_USER from SSM." >&2; exit 1; }
+
     DB_PASSWORD=$(aws ssm get-parameter --name "${ssm_parameter_path}/DB_PASSWORD" --with-decryption --query "Parameter.Value" --output text) || { echo "Failed to retrieve DB_PASSWORD from SSM." >&2; exit 1; }
+
     DB_NAME=$(aws ssm get-parameter --name "${ssm_parameter_path}/DB_NAME" --with-decryption --query "Parameter.Value" --output text) || { echo "Failed to retrieve DB_NAME from SSM." >&2; exit 1; }
   else
     DB_HOST="${db_host}"
     DB_USER="${db_user}"
     DB_NAME="${db_name}"
+
     if [ -n "${db_password_secret_arn}" ]; then
       DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "${db_password_secret_arn}" --query "SecretString" --output text) || { echo "Failed to retrieve DB password from Secrets Manager." >&2; exit 1; }
     fi
@@ -78,6 +85,9 @@ fi
 chown ec2-user:ec2-user "$ENV_FILE"
 
 sudo -u ec2-user npm install
+
 sudo -u ec2-user pm2 start "$APP_DIR/${backend_path}/index.js" --name backend
+
 sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ec2-user --hp /home/ec2-user
+
 sudo -u ec2-user pm2 save

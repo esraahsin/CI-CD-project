@@ -37,8 +37,3 @@ output "rds_endpoint" {
   description = "RDS endpoint (null when JSON storage is enabled)"
   value       = try(aws_db_instance.main[0].address, null)
 }
-
-output "ssm_parameter_path" {
-  description = "SSM parameter path used for backend env values"
-  value       = var.ssm_parameter_path
-}
