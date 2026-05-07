@@ -288,14 +288,16 @@ data "aws_iam_policy_document" "ec2_access" {
 }
 
 resource "aws_iam_policy" "ec2_access" {
+  count  = (var.use_ssm_parameters || var.db_password_secret_arn != "") ? 1 : 0
   name   = "${local.name_prefix}-ec2-access"
   policy = data.aws_iam_policy_document.ec2_access.json
   tags   = local.tags
 }
 
 resource "aws_iam_role_policy_attachment" "ec2_access" {
+  count      = (var.use_ssm_parameters || var.db_password_secret_arn != "") ? 1 : 0
   role       = aws_iam_role.ec2.name
-  policy_arn = aws_iam_policy.ec2_access.arn
+  policy_arn = aws_iam_policy.ec2_access[0].arn
 }
 
 resource "aws_iam_instance_profile" "ec2" {

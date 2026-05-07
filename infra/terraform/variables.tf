@@ -222,5 +222,5 @@ variable "frontend_api_url" {
 variable "frontend_build_output_path" {
   type        = string
   description = "Build output path for the frontend app."
-  default     = "dist/client"
+  default     = "dist/client/browser"
 }
