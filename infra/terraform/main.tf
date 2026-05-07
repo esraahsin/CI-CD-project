@@ -8,7 +8,7 @@ locals {
   db_host_value      = local.enable_rds ? aws_db_instance.main[0].address : var.db_host
   db_password_value  = var.db_password_secret_arn != "" ? data.aws_secretsmanager_secret_version.db_password[0].secret_string : (var.use_ssm_parameters ? data.aws_ssm_parameter.db_password[0].value : "")
   final_snapshot_identifier = var.db_final_snapshot_identifier != "" ? var.db_final_snapshot_identifier : "${local.name_prefix}-final"
-  backend_api_url    = var.frontend_api_url != "" ? var.frontend_api_url : "http://${aws_instance.backend.public_dns}"
+  backend_api_url = var.frontend_api_url != "" ? var.frontend_api_url : "http://${aws_lb.backend.dns_name}"  
   ssm_parameter_arn  = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.ssm_parameter_path}*"
   tags = {
     Project     = var.project_name
@@ -120,9 +120,10 @@ resource "aws_route_table_association" "private" {
 
 resource "aws_security_group" "backend" {
   name        = "${local.name_prefix}-backend-sg"
-  description = "Backend instance security group"
+  description = "Backend EC2 - accepts traffic only from ALB"
   vpc_id      = aws_vpc.main.id
 
+  # SSH uniquement depuis mon IP pour débogage
   ingress {
     description = "SSH"
     from_port   = 22
@@ -131,21 +132,7 @@ resource "aws_security_group" "backend" {
     cidr_blocks = [var.ssh_cidr]
   }
 
-  ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [var.http_cidr]
-  }
-
-  ingress {
-    description = "App port"
-    from_port   = var.backend_port
-    to_port     = var.backend_port
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
-  }
+  # Le port 3000 depuis l'ALB est géré par aws_security_group_rule dans alb_asg.tf
 
   egress {
     from_port   = 0
@@ -156,6 +143,8 @@ resource "aws_security_group" "backend" {
 
   tags = merge(local.tags, { Name = "${local.name_prefix}-backend-sg" })
 }
+
+  
 
 resource "aws_security_group" "frontend" {
   name        = "${local.name_prefix}-frontend-sg"
@@ -258,7 +247,7 @@ resource "aws_ssm_parameter" "db_host" {
 resource "aws_instance" "backend" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.backend_instance_type
-  subnet_id                   = values(aws_subnet.public)[0].id
+  subnet_id                   = values(aws_subnet.private)[0].id
   vpc_security_group_ids      = [aws_security_group.backend.id]
   key_name                    = var.key_pair_name
   iam_instance_profile = data.aws_iam_instance_profile.lab.name

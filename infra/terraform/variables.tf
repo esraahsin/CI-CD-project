@@ -224,3 +224,39 @@ variable "frontend_build_output_path" {
   description = "Build output path for the frontend app."
   default     = "dist/client/browser"
 }
+
+variable "asg_min_size" {
+  type        = number
+  description = "Minimum number of instances in the ASG."
+  default     = 2
+}
+
+variable "asg_desired_capacity" {
+  type        = number
+  description = "Desired number of instances in the ASG."
+  default     = 2
+}
+
+variable "asg_max_size" {
+  type        = number
+  description = "Maximum number of instances in the ASG."
+  default     = 4
+}
+
+variable "asg_cpu_target" {
+  type        = number
+  description = "Target CPU utilization percentage for the scaling policy."
+  default     = 70.0
+}
+
+variable "health_check_path" {
+  type        = string
+  description = "Path for the ALB health check."
+  default     = "/health"
+}
+
+variable "health_check_grace_period" {
+  type        = number
+  description = "Time in seconds to wait before starting health checks on new instances."
+  default     = 300
+}
