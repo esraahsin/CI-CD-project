@@ -43,19 +43,26 @@ $SshCidr = "$MyIp/32"
 Write-Ok "Your IP: $SshCidr"
 # Step 2b: Import existing key pair into this sandbox
 Write-Step "Importing key pair into sandbox"
-$keyExists = aws ec2 describe-key-pairs --key-names $KeyPairName --region $Region 2>$null
+
+$keyExists = $false
+try {
+    aws ec2 describe-key-pairs --key-names $KeyPairName --region $Region 2>$null | Out-Null
+    $keyExists = $true
+} catch {
+    $keyExists = $false
+}
+
 if (-not $keyExists) {
     Write-Warn "Key pair '$KeyPairName' not in this sandbox - importing from .pem file"
-    
-    # Extract public key from the existing .pem
+
     $pubKey = ssh-keygen -y -f "$KeyPairName.pem"
     $pubKeyBase64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($pubKey))
-    
+
     aws ec2 import-key-pair `
         --key-name $KeyPairName `
         --public-key-material $pubKeyBase64 `
         --region $Region | Out-Null
-    
+
     Write-Ok "Key pair '$KeyPairName' imported successfully"
 } else {
     Write-Ok "Key pair '$KeyPairName' already exists in this sandbox"
