@@ -126,6 +126,7 @@ resource "aws_launch_template" "backend" {
     resource_type = "instance"
     tags          = merge(local.tags, { Name = "${local.name_prefix}-backend-asg-instance" })
   }
+  depends_on = [aws_ssm_parameter.db_host] 
 }
 
 resource "aws_autoscaling_group" "backend" {
