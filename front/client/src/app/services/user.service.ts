@@ -14,7 +14,7 @@ export interface User {
 })
 export class UserService {
 
-private apiUrl = `${(window as any).__API_URL__ } || "'http://localhost:3000'"/api/users`;
+private apiUrl = `${(window as any).__API_URL__ } || /api/users`;
 
   constructor(private http: HttpClient) { }
 
