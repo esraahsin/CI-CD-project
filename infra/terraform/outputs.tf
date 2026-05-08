@@ -1,21 +1,19 @@
+# outputs.tf
+
 output "vpc_id" {
   description = "VPC ID"
   value       = aws_vpc.main.id
 }
 
-output "backend_public_ip" {
-  description = "Backend instance public IP"
-  value       = aws_instance.backend.public_ip
+
+output "backend_alb_dns" {
+  description = "Backend ALB DNS name"
+  value       = aws_lb.backend.dns_name
 }
 
-output "backend_public_dns" {
-  description = "Backend instance public DNS"
-  value       = aws_instance.backend.public_dns
-}
-
-output "backend_url" {
-  description = "Backend base URL"
-  value       = "http://${aws_instance.backend.public_dns}"
+output "backend_alb_url" {
+  description = "Backend ALB URL"
+  value       = "http://${aws_lb.backend.dns_name}"
 }
 
 output "frontend_public_ip" {

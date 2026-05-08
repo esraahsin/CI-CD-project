@@ -1,33 +1,15 @@
-#!/bin/bash -e
+#!/bin/bash -e 
+#-e if the shell script has an error it s gonna stop the execution immediately
 
 export AWS_REGION="${aws_region}"
 
-dnf update -y
-dnf install -y git nginx
+dnf update -y #-y so we answer yes to all questions during the installation process
+dnf install -y git 
 curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+# no node.js in the default amazon linux 2023 repository, so we need to add the nodesource repository to install node.js
+# -f fail silently(no output at all) on HTTP errors, -s silent mode(no progression seen yet print errors we need to see), -S show error if it fails, -L follow redirects
 dnf install -y nodejs
-npm install -g pm2
-
-systemctl enable nginx
-
-cat > /etc/nginx/conf.d/backend.conf <<'NGINX'
-server {
-  listen 80;
-  server_name _;
-
-  location / {
-    proxy_pass http://localhost:${backend_port};
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection 'upgrade';
-    proxy_set_header Host $host;
-    proxy_cache_bypass $http_upgrade;
-  }
-}
-NGINX
-
-rm -f /etc/nginx/conf.d/default.conf
-systemctl restart nginx
+npm install -g pm2 # process manager for node js app to keep them alive 
 
 APP_DIR="/home/ec2-user/app"
 mkdir -p "$APP_DIR"
@@ -86,6 +68,7 @@ chown ec2-user:ec2-user "$ENV_FILE"
 
 sudo -u ec2-user npm install
 
+#
 sudo -u ec2-user pm2 start "$APP_DIR/${backend_path}/index.js" --name backend
 
 sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ec2-user --hp /home/ec2-user

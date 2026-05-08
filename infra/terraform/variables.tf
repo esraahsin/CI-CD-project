@@ -18,7 +18,7 @@ variable "environment" {
 
 variable "vpc_cidr" {
   type        = string
-  description = "CIDR block for the VPC."
+  description = "CIDR block for the VPC." 
   default     = "10.0.0.0/16"
 }
 
@@ -197,7 +197,7 @@ variable "db_publicly_accessible" {
 variable "use_ssm_parameters" {
   type        = bool
   description = "When true, read backend environment values from SSM parameters."
-  default     = false
+  default     = true
 }
 
 variable "ssm_parameter_path" {

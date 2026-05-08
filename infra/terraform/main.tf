@@ -86,7 +86,7 @@ resource "aws_nat_gateway" "main" {
   depends_on = [aws_internet_gateway.main]
 }
 
-resource "aws_route_table" "public" {
+resource "aws_route_table" "public" { 
   vpc_id = aws_vpc.main.id
   tags   = merge(local.tags, { Name = "${local.name_prefix}-public-rt" })
 
@@ -95,6 +95,7 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.main.id
   }
 }
+
 
 resource "aws_route_table_association" "public" {
   for_each       = aws_subnet.public
@@ -166,7 +167,7 @@ resource "aws_security_group" "frontend" {
     protocol    = "tcp"
     cidr_blocks = [var.http_cidr]
   }
-
+# pour l installation et git clone
   egress {
     from_port   = 0
     to_port     = 0
@@ -178,11 +179,11 @@ resource "aws_security_group" "frontend" {
 }
 
 resource "aws_security_group" "rds" {
-  count       = local.enable_rds ? 1 : 0
+  count       = local.enable_rds ? 1 : 0 
   name        = "${local.name_prefix}-rds-sg"
   description = "RDS security group"
   vpc_id      = aws_vpc.main.id
-
+#l acces de backend via port 3306
   ingress {
     description     = "MySQL from backend"
     from_port       = var.db_port
@@ -190,7 +191,7 @@ resource "aws_security_group" "rds" {
     protocol        = "tcp"
     security_groups = [aws_security_group.backend.id]
   }
-
+# pour les reponses
   egress {
     from_port   = 0
     to_port     = 0
@@ -236,6 +237,9 @@ resource "aws_db_instance" "main" {
 data "aws_iam_instance_profile" "lab" {
   name = "LabInstanceProfile"
 }
+
+
+
 resource "aws_ssm_parameter" "db_host" {
   count     = local.enable_rds ? 1 : 0
   name      = "${var.ssm_parameter_path}/DB_HOST"
@@ -244,31 +248,7 @@ resource "aws_ssm_parameter" "db_host" {
   overwrite = true
   tags      = local.tags
 }
-resource "aws_instance" "backend" {
-  ami                         = data.aws_ami.amazon_linux.id
-  instance_type               = var.backend_instance_type
-  subnet_id                   = values(aws_subnet.private)[0].id
-  vpc_security_group_ids      = [aws_security_group.backend.id]
-  key_name                    = var.key_pair_name
-  iam_instance_profile = data.aws_iam_instance_profile.lab.name
-  depends_on = [aws_ssm_parameter.db_host]
-  user_data                   = templatefile("${path.module}/templates/backend-user-data.sh.tftpl", {
-    aws_region           = var.aws_region
-    repo_url             = var.app_repo_url
-    repo_branch          = var.app_repo_branch
-    backend_path         = var.backend_app_path
-    backend_port         = var.backend_port
-    use_json_storage     = var.use_json_storage
-    use_ssm_parameters   = var.use_ssm_parameters
-    ssm_parameter_path   = var.ssm_parameter_path
-    db_host              = local.db_host_value
-    db_user              = var.db_username
-    db_name              = var.db_name
-    db_password_secret_arn = var.db_password_secret_arn
-  })
-  user_data_replace_on_change = true
-  tags                        = merge(local.tags, { Name = "${local.name_prefix}-backend" })
-}
+
 resource "aws_instance" "frontend" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.frontend_instance_type

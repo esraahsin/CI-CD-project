@@ -334,6 +334,7 @@ app.get('/api/users', async (req, res) => {
     handleStorageError(res, error);
   }
 });
+
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });

@@ -16,8 +16,8 @@ param(
     [string]$Environment  = "dev"
 )
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest #to return all errors
+$ErrorActionPreference = "Stop" #we stop in case of any error
 
 function Write-Step([string]$msg) {
     Write-Host ""
@@ -41,6 +41,9 @@ Write-Step "Detecting your public IP"
 $MyIp = (Invoke-RestMethod -Uri "https://checkip.amazonaws.com").Trim()
 $SshCidr = "$MyIp/32"
 Write-Ok "Your IP: $SshCidr"
+
+
+
 # Step 2b: Import existing key pair into this sandbox
 Write-Step "Importing key pair into sandbox"
 
@@ -127,7 +130,7 @@ terraform apply -auto-approve
 
 # Step 8: Print outputs
 Write-Step "Deployment complete"
-$BackendDns  = terraform output -raw backend_public_dns
+$BackendDns  = terraform output -raw backend_alb_dns 
 $FrontendDns = terraform output -raw frontend_public_dns
 $RdsEndpoint = terraform output -raw rds_endpoint
 
@@ -142,7 +145,7 @@ Write-Host ""
 
 # Step 9: Health check with retry
 Write-Step "Waiting for backend to be healthy (up to 3 min)"
-$HealthUrl   = "http://$BackendDns/health"
+$HealthUrl = "http://$BackendDns/health" 
 $MaxAttempts = 18
 $Delay       = 10
 

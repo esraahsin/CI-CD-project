@@ -1,8 +1,4 @@
 
-# -----------------------------------------------------------------------------
-# 1. APPLICATION LOAD BALANCER (ALB)
-# Placé dans les subnets PUBLICS pour recevoir le trafic internet
-# -----------------------------------------------------------------------------
 resource "aws_lb" "backend" {
   name               = "${local.name_prefix}-alb"
   internal           = false          # public, accessible depuis internet
@@ -15,11 +11,6 @@ resource "aws_lb" "backend" {
   tags = merge(local.tags, { Name = "${local.name_prefix}-alb" })
 }
 
-# -----------------------------------------------------------------------------
-# 2. TARGET GROUP
-# Le groupe de cibles que l'ALB envoie le trafic vers
-# Health check sur /health → doit répondre 200 OK
-# -----------------------------------------------------------------------------
 resource "aws_lb_target_group" "backend" {
   name        = "${local.name_prefix}-tg"
   port        = var.backend_port   # 3000
@@ -41,11 +32,6 @@ resource "aws_lb_target_group" "backend" {
 
   tags = merge(local.tags, { Name = "${local.name_prefix}-tg" })
 }
-
-# -----------------------------------------------------------------------------
-# 3. LISTENER ALB
-# Écoute sur le port 80 et redirige vers le Target Group
-# -----------------------------------------------------------------------------
 resource "aws_lb_listener" "backend_http" {
   load_balancer_arn = aws_lb.backend.arn
   port              = 80
@@ -57,10 +43,6 @@ resource "aws_lb_listener" "backend_http" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# 4. SECURITY GROUP POUR L'ALB
-# Accepte le trafic HTTP (80) depuis internet 0.0.0.0/0
-# -----------------------------------------------------------------------------
 resource "aws_security_group" "alb" {
   name        = "${local.name_prefix}-alb-sg"
   description = "ALB security group - accepts HTTP from internet"
@@ -84,28 +66,20 @@ resource "aws_security_group" "alb" {
   tags = merge(local.tags, { Name = "${local.name_prefix}-alb-sg" })
 }
 
-# -----------------------------------------------------------------------------
-# MISE À JOUR DU SECURITY GROUP BACKEND
-# Maintenant le backend accepte le trafic SEULEMENT depuis le SG de l'ALB
-# (pas depuis internet directement)
-# NOTE : Remplacez le security group "backend" dans main.tf par celui-ci
-# ou ajoutez cette règle d'ingress au security group existant
-# -----------------------------------------------------------------------------
+
+
+
+
 resource "aws_security_group_rule" "backend_from_alb" {
   type                     = "ingress"
   from_port                = var.backend_port   # 3000
   to_port                  = var.backend_port
   protocol                 = "tcp"
-  source_security_group_id = aws_security_group.alb.id   # SEULEMENT depuis l'ALB
+  source_security_group_id = aws_security_group.alb.id   
   security_group_id        = aws_security_group.backend.id
   description              = "Allow traffic only from ALB"
 }
 
-# -----------------------------------------------------------------------------
-# 5. LAUNCH TEMPLATE
-# Modèle de lancement pour les instances EC2 du backend
-# Inclut le user data qui installe et démarre l'app automatiquement
-# -----------------------------------------------------------------------------
 resource "aws_launch_template" "backend" {
   name_prefix   = "${local.name_prefix}-backend-lt-"
   image_id      = data.aws_ami.amazon_linux.id
@@ -154,11 +128,6 @@ resource "aws_launch_template" "backend" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# 6. AUTO SCALING GROUP (ASG)
-# min 2 instances, desired 2, max 4
-# Réparti sur les 2 subnets PRIVÉS (AZ-A et AZ-B)
-# -----------------------------------------------------------------------------
 resource "aws_autoscaling_group" "backend" {
   name                = "${local.name_prefix}-asg"
   min_size            = 2     # minimum 2 instances toujours en vie
@@ -182,7 +151,6 @@ resource "aws_autoscaling_group" "backend" {
   health_check_type         = "ELB"
   health_check_grace_period = 300   # 5 min pour laisser l'app démarrer avant les checks
 
-  # Forcer la distribution équilibrée entre les AZ
   force_delete = true
 
   # Tags propagés aux instances EC2 créées par l'ASG
@@ -206,11 +174,6 @@ resource "aws_autoscaling_group" "backend" {
 
   depends_on = [aws_lb_listener.backend_http]
 }
-
-# -----------------------------------------------------------------------------
-# 7. SCALING POLICY — Scale Out (CPU > 70%)
-# Si la CPU dépasse 70%, l'ASG ajoute des instances (jusqu'à max 4)
-# -----------------------------------------------------------------------------
 resource "aws_autoscaling_policy" "scale_out" {
   name                   = "${local.name_prefix}-scale-out"
   autoscaling_group_name = aws_autoscaling_group.backend.name
@@ -223,11 +186,6 @@ resource "aws_autoscaling_policy" "scale_out" {
     target_value = 70.0   # Si CPU > 70% → scale out
   }
 }
-
-# -----------------------------------------------------------------------------
-# 8. OUTPUTS SUPPLÉMENTAIRES
-# URL de l'ALB à utiliser dans le frontend
-# -----------------------------------------------------------------------------
 output "alb_dns_name" {
   description = "DNS name of the Application Load Balancer"
   value       = aws_lb.backend.dns_name
